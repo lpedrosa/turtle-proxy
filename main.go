@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/lpedrosa/turtle-proxy/handlers"
 )
 
 const defaultPort int = 6000
@@ -15,7 +17,7 @@ func main() {
 
 	addr := ":" + strconv.Itoa(defaultPort)
 
-	http.HandleFunc("/delay", handleDelay)
+	http.HandleFunc("/delay", handlers.HandleRegisterDelayed)
 	http.HandleFunc("/get-delay", handleGetDelay)
 
 	// for monitoring
@@ -26,27 +28,6 @@ func main() {
 
 func handlePing(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "pong")
-}
-
-func handleDelay(w http.ResponseWriter, r *http.Request) {
-	method := r.Method
-
-	switch method {
-	case "POST":
-		entry, err := parseDelayRequest(r)
-
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error: %s", err)
-			return
-		}
-
-		fmt.Fprintf(w, "Storing %s", entry)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "Method %s not supported", method)
-	}
-
 }
 
 func handleGetDelay(w http.ResponseWriter, r *http.Request) {
@@ -67,10 +48,6 @@ func handleGetDelay(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "Method %s not supported", method)
 	}
-}
-
-func parseDelayRequest(r *http.Request) (sd *DelayedDownload, err error) {
-	return &DelayedDownload{Slug: "lol", URL: nil, Delay: 10}, nil
 }
 
 func parseGetDelayRequest(r *http.Request) (slug string, err error) {

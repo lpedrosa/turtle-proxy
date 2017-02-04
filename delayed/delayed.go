@@ -1,4 +1,4 @@
-package main
+package delayed
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ type DelayedStorage struct {
 	sLock   sync.RWMutex
 }
 
-func newDelayedStorage() *DelayedStorage {
+func New() *DelayedStorage {
 	ds := &DelayedStorage{}
 	ds.storage = make(map[string]DelayedDownload)
 
