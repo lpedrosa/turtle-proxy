@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/lpedrosa/turtle-proxy/delayed"
 )
@@ -20,7 +23,9 @@ func HandleRegisterDelayed(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, "Storing %s", entry)
+		responseContent := map[string]string{"id": entry.Slug}
+
+		json.NewEncoder(w).Encode(responseContent)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "Method %s not supported", method)
@@ -28,5 +33,27 @@ func HandleRegisterDelayed(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseDelayRequest(r *http.Request) (sd *delayed.DelayedDownload, err error) {
-	return &delayed.DelayedDownload{Slug: "lol", URL: nil, Delay: 10}, nil
+	jsonDecoder := json.NewDecoder(r.Body)
+
+	var parsedReq struct {
+		Target string
+		Delay  uint
+	}
+	// read body as json
+	err = jsonDecoder.Decode(&parsedReq)
+	if err != nil {
+		return nil, err
+	}
+
+	// check if target is a valid url
+	targetURL, err := url.ParseRequestURI(parsedReq.Target)
+	if err != nil {
+		return nil, errors.New("target is not a valid url")
+	}
+
+	//jsonEncoder.Encode(
+	return &delayed.DelayedDownload{
+		Slug:  "lol",
+		URL:   targetURL,
+		Delay: parsedReq.Delay}, nil
 }
