@@ -71,3 +71,18 @@ func TestHandleRegisterDelayed(t *testing.T) {
 		}
 	})
 }
+
+func TestHandleGetDelay(t *testing.T) {
+	t.Run("Supports only GET", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/delay", nil)
+
+		resp := httptest.NewRecorder()
+
+		HandleGetDelayed(resp, req)
+
+		if status := resp.Code; status != http.StatusMethodNotAllowed {
+			t.Errorf("expected status code %v, got %v",
+				http.StatusMethodNotAllowed, status)
+		}
+	})
+}
