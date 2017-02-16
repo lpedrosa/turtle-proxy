@@ -63,7 +63,7 @@ func HandleGetDelayed(w http.ResponseWriter, r *http.Request) {
 
 	switch method {
 	case "GET":
-		slug, err := parseGetDelayedRequest(r)
+		slug, err := ParseGetDelayedRequest(r)
 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -78,11 +78,12 @@ func HandleGetDelayed(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parseGetDelayedRequest(r *http.Request) (slug string, err error) {
-	slug = r.FormValue("id")
+func ParseGetDelayedRequest(r *http.Request) (slug string, err error) {
+	// FIXME: extract logic to another file or test it some other way (shouldn't be public)
+	slug = r.URL.Path[len("/delay/"):]
 
 	if len(slug) == 0 {
-		err = errors.New("Delay id not found")
+		err = errors.New("delay id not found")
 		return "", err
 	}
 

@@ -74,7 +74,7 @@ func TestHandleRegisterDelayed(t *testing.T) {
 
 func TestHandleGetDelay(t *testing.T) {
 	t.Run("Supports only GET", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/delay", nil)
+		req := httptest.NewRequest("POST", "/delay/1", nil)
 
 		resp := httptest.NewRecorder()
 
@@ -85,4 +85,31 @@ func TestHandleGetDelay(t *testing.T) {
 				http.StatusMethodNotAllowed, status)
 		}
 	})
+	t.Run("Requires a delay id on the path", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/delay/", nil)
+
+		resp := httptest.NewRecorder()
+
+		HandleGetDelayed(resp, req)
+
+		if status := resp.Code; status != http.StatusBadRequest {
+			t.Errorf("expected status code %v, got %v",
+				http.StatusBadRequest, status)
+		}
+	})
+}
+
+func TestParseGetDelayedRequest(t *testing.T) {
+	expectedSlug := "1"
+	req := httptest.NewRequest("GET", "/delay/"+expectedSlug, nil)
+
+	slug, err := ParseGetDelayedRequest(req)
+
+	if err != nil {
+		t.Fatalf("expected slug to be %v, got error: %v", expectedSlug, err)
+	}
+
+	if slug != expectedSlug {
+		t.Fatalf("expected slug to be %v, got %v", expectedSlug, slug)
+	}
 }
