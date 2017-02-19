@@ -23,7 +23,7 @@ func HandleRegisterDelayed(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		responseContent := map[string]string{"id": entry.Slug}
+		responseContent := map[string]string{"id": entry.Id}
 
 		json.NewEncoder(w).Encode(responseContent)
 	default:
@@ -53,7 +53,7 @@ func parseDelayRequest(r *http.Request) (sd *delayed.DelayedDownload, err error)
 
 	//jsonEncoder.Encode(
 	return &delayed.DelayedDownload{
-		Slug:  "lol",
+		Id:    "lol",
 		URL:   targetURL,
 		Delay: parsedReq.Delay}, nil
 }

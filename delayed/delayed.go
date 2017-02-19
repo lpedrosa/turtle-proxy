@@ -8,7 +8,7 @@ import (
 )
 
 type DelayedDownload struct {
-	Slug  string
+	Id    string
 	URL   *url.URL
 	Delay uint
 }
@@ -18,7 +18,7 @@ type DelayedStorage struct {
 	sLock   sync.RWMutex
 }
 
-func New() *DelayedStorage {
+func NewStorage() *DelayedStorage {
 	ds := &DelayedStorage{}
 	ds.storage = make(map[string]DelayedDownload)
 
@@ -30,11 +30,11 @@ func (ds *DelayedStorage) Store(delayed DelayedDownload) error {
 	ds.sLock.Lock()
 	defer ds.sLock.Unlock()
 
-	storageKey := delayed.Slug
+	storageKey := delayed.Id
 
 	_, ok := ds.storage[storageKey]
 
-	if !ok {
+	if ok {
 		errMsg := fmt.Sprintf("Cannot store existing key %s", storageKey)
 		return errors.New(errMsg)
 	}
@@ -43,13 +43,13 @@ func (ds *DelayedStorage) Store(delayed DelayedDownload) error {
 	return nil
 }
 
-func (ds *DelayedStorage) GetAndRemove(slug string) (delayed *DelayedDownload, ok bool) {
+func (ds *DelayedStorage) GetAndRemove(slug string) (delayed DelayedDownload, ok bool) {
 	// only one caller can write at a time
 	// still a write lock because we will delete the entry later
 	ds.sLock.Lock()
 	defer ds.sLock.Unlock()
 
-	*delayed, ok = ds.storage[slug]
+	delayed, ok = ds.storage[slug]
 
 	// we do not need the element again
 	delete(ds.storage, slug)
