@@ -12,19 +12,51 @@ import (
 const defaultPort int = 6000
 
 func main() {
-	fmt.Printf("Starting turtle-proxy on port %d...", defaultPort)
+	fmt.Printf("Starting turtle-proxy on port %d...\n", defaultPort)
 
-	addr := ":" + strconv.Itoa(defaultPort)
+	adminMux := http.NewServeMux()
 
-	http.HandleFunc("/delay", handlers.HandleRegisterDelayed)
-	http.HandleFunc("/delay/", handlers.HandleGetDelayed)
+	adminMux.HandleFunc("/delay", handlers.HandleRegisterDelayed)
+	adminMux.HandleFunc("/delay/", handlers.HandleGetDelayed)
 
 	// for monitoring
-	http.HandleFunc("/ping", handlePing)
+	adminMux.HandleFunc("/ping", handlePing)
 
-	log.Fatal(http.ListenAndServe(addr, nil))
+	admin := newConnector(defaultPort, adminMux)
+
+	proxyMux := http.NewServeMux()
+
+	proxyMux.HandleFunc("/", handleHello)
+
+	proxy := newConnector(6001, proxyMux)
+
+	shutdown := make(chan error)
+
+	log.Println(admin)
+	log.Println(proxy)
+
+	go func() {
+		shutdown <- admin.ListenAndServe()
+	}()
+
+	go func() {
+		shutdown <- proxy.ListenAndServe()
+	}()
+
+	err := <-shutdown
+	log.Fatal(err)
 }
 
 func handlePing(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "pong")
+}
+
+func handleHello(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "hello world")
+}
+
+func newConnector(port int, handler http.Handler) *http.Server {
+	addr := ":" + strconv.Itoa(port)
+	server := &http.Server{Addr: addr, Handler: handler}
+	return server
 }
