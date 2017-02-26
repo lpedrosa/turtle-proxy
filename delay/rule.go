@@ -41,60 +41,86 @@ func (n *noopMatcher) Clear() {
 // Storage
 //-----------------------
 
+type ruleWithMatch struct {
+	matchId string
+	*Rule
+}
+
 type RuleStorage struct {
-	storage map[string]*Rule
+	storage map[string]*ruleWithMatch
 	matcher RuleMatcher
 	sLock   sync.RWMutex
 }
 
 func DefaultStorage() *RuleStorage {
-	// FIXME implement a matcher
-	matcher := &noopMatcher{}
+	// use gorilla mux as a matcher
+	matcher := newGorillaMatcher()
 	return NewStorage(matcher)
 }
 
 func NewStorage(matcher RuleMatcher) *RuleStorage {
-	ds := &RuleStorage{}
-	ds.storage = make(map[string]*Rule)
-	ds.matcher = matcher
-	return ds
+	rs := &RuleStorage{}
+	rs.storage = make(map[string]*ruleWithMatch)
+	rs.matcher = matcher
+	return rs
 }
 
-func (ds *RuleStorage) Store(path string, delay int) {
+func (rs *RuleStorage) Store(path string, delay int) {
 	if delay < 0 {
 		panic("delay cannot be negative!")
 	}
 
 	// only one caller can write at a time
-	ds.sLock.Lock()
-	defer ds.sLock.Unlock()
+	rs.sLock.Lock()
+	defer rs.sLock.Unlock()
 
-	ds.matcher.Add("GET", path)
-	ds.storage[path] = &Rule{Path: path, Delay: delay}
+	matchRuleId := rs.matcher.Add("GET", path)
+	rule := &Rule{Path: path, Delay: delay}
+	rs.storage[path] = &ruleWithMatch{matchId: matchRuleId, Rule: rule}
 }
 
-func (ds *RuleStorage) Get(path string) (rule *Rule, ok bool) {
-	// only one caller can write at a time
-	// still a write lock because we will delete the entry later
-	ds.sLock.Lock()
-	defer ds.sLock.Unlock()
+func (rs *RuleStorage) Get(path string) (rule *Rule, ok bool) {
+	// fine to use a read lock here
+	rs.sLock.RLock()
+	defer rs.sLock.RUnlock()
 
-	ok = ds.matcher.Match("GET", path)
+	ok = rs.matcher.Match("GET", path)
 	if !ok {
 		return nil, ok
 	}
 
-	rule, ok = ds.storage[path]
+	ruleWithMatch, ok := rs.storage[path]
 
 	if !ok {
 		log.Panicf("No rule found for match: %s\n", path)
 	}
 
-	return rule, ok
+	return ruleWithMatch.Rule, ok
 }
 
-func (ds *RuleStorage) Remove(path string) {
+func (rs *RuleStorage) Remove(path string) {
+	rs.sLock.Lock()
+	defer rs.sLock.Unlock()
+
+	ruleWithMatch, ok := rs.storage[path]
+	if !ok {
+		// nothing to remove
+		return
+	}
+
+	matchId := ruleWithMatch.matchId
+	rs.matcher.Remove(matchId)
+
+	delete(rs.storage, path)
 }
 
-func (ds *RuleStorage) Clear() {
+func (rs *RuleStorage) Clear() {
+	rs.sLock.Lock()
+	defer rs.sLock.Unlock()
+
+	// clear storage
+	rs.storage = make(map[string]*ruleWithMatch)
+
+	// clear matcher
+	rs.matcher.Clear()
 }

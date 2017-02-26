@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestEmptyRuleStorage(t *testing.T) {
+func TestRuleStorage(t *testing.T) {
 	t.Run("Get from an empty storage should not retrive anything", func(t *testing.T) {
 		storage := DefaultStorage()
 
@@ -14,9 +14,6 @@ func TestEmptyRuleStorage(t *testing.T) {
 			t.Fatal("Expected Storage to be empty!")
 		}
 	})
-}
-
-func TestOperations(t *testing.T) {
 	t.Run("Get works as for existing delay", func(t *testing.T) {
 		storage := DefaultStorage()
 
@@ -62,6 +59,27 @@ func TestOperations(t *testing.T) {
 
 		if ok {
 			t.Fatalf("Expected storage to not contain rule with path: %s", path)
+		}
+	})
+	t.Run("Remove one rule should keep other rules intact", func(t *testing.T) {
+		storage := DefaultStorage()
+
+		path := "/route"
+		storage.Store(path, 10)
+
+		path2 := "/route/{id}"
+		storage.Store(path2, 10)
+
+		storage.Remove(path)
+		_, ok := storage.Get(path)
+
+		if ok {
+			t.Fatalf("Expected storage to not contain rule with path: %s", path)
+		}
+
+		_, ok = storage.Get(path2)
+		if !ok {
+			t.Fatalf("Expected storage to contain rule with path: %s", path2)
 		}
 	})
 }
