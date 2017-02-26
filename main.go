@@ -22,18 +22,16 @@ func main() {
 	// for monitoring
 	adminMux.HandleFunc("/ping", handlePing)
 
-	admin := newConnector(defaultPort, adminMux)
+	admin := newConnector(defaultPort+1, adminMux)
 
 	proxyMux := http.NewServeMux()
 
 	proxyMux.HandleFunc("/", handleHello)
 
-	proxy := newConnector(6001, proxyMux)
+	proxy := newConnector(defaultPort, proxyMux)
 
+	// start up connectors
 	shutdown := make(chan error)
-
-	log.Println(admin)
-	log.Println(proxy)
 
 	go func() {
 		shutdown <- admin.ListenAndServe()
