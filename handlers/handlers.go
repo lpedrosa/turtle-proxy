@@ -1,5 +1,6 @@
 package handlers
 
+/*
 import (
 	"encoding/json"
 	"errors"
@@ -7,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/lpedrosa/turtle-proxy/delayed"
+	"github.com/lpedrosa/turtle-proxy/delay"
 )
 
 func HandleRegisterDelayed(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +33,7 @@ func HandleRegisterDelayed(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parseDelayRequest(r *http.Request) (sd *delayed.DelayedDownload, err error) {
+func parseDelayRequest(r *http.Request) (sd *delay., err error) {
 	jsonDecoder := json.NewDecoder(r.Body)
 
 	var parsedReq struct {
@@ -89,3 +90,4 @@ func ParseGetDelayedRequest(r *http.Request) (slug string, err error) {
 
 	return slug, nil
 }
+*/
