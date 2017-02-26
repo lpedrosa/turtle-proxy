@@ -18,11 +18,11 @@ type ProxyHandlers struct {
 	ruleStorage *delay.RuleStorage
 }
 
-func NewProxyHandlers(host string, port int) *ProxyHandlers {
+func NewProxyHandlers(host string, port int, storage *delay.RuleStorage) *ProxyHandlers {
 	return &ProxyHandlers{
 		target:      "http://" + host + ":" + strconv.Itoa(port),
 		client:      &http.Client{},
-		ruleStorage: delay.DefaultStorage()}
+		ruleStorage: storage}
 }
 
 func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
