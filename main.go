@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -13,8 +16,38 @@ import (
 
 const defaultPort int = 6000
 
+type Config struct {
+	Host        string
+	ProxyPort   int
+	ApiPort     int
+	ProxyTarget string
+}
+
+func parseConfig() (*Config, error) {
+	host := flag.String("host", "0.0.0.0", "hostname")
+	proxyPort := flag.Int("port", defaultPort, "proxy port")
+	apiPort := flag.Int("api-port", (*proxyPort)+1, "api port")
+	target := flag.String("target", "", "proxy target")
+
+	flag.Parse()
+
+	if target == nil || *target == "" {
+		return nil, errors.New("you must specify a target")
+	}
+
+	return &Config{
+		Host:        *host,
+		ProxyPort:   *proxyPort,
+		ApiPort:     *apiPort,
+		ProxyTarget: *target}, nil
+}
+
 func main() {
-	fmt.Printf("Starting turtle-proxy on port %d...\n", defaultPort)
+	config, err := parseConfig()
+	if err != nil {
+		fmt.Printf("error: %s\n", err)
+		os.Exit(1)
+	}
 
 	storage := delay.DefaultStorage()
 
@@ -27,15 +60,16 @@ func main() {
 	// for monitoring
 	apiMux.HandleFunc("/ping", handlePing).Methods("GET")
 
-	api := newConnector(defaultPort+1, apiMux)
+	api := newConnector(config.Host, config.ApiPort, apiMux)
 
-	proxyHandlers := handlers.NewProxyHandlers("localhost", 8000, storage)
+	proxyHandlers := handlers.NewProxyHandlers(config.ProxyTarget, storage)
 
 	proxyMux := http.NewServeMux()
 	proxyMux.HandleFunc("/", proxyHandlers.ProxyRequest)
 
-	proxy := newConnector(defaultPort, proxyMux)
+	proxy := newConnector(config.Host, config.ProxyPort, proxyMux)
 
+	fmt.Printf("Starting turtle-proxy [port: %d, api: %d]...\n", config.ProxyPort, config.ApiPort)
 	// start up connectors
 	shutdown := make(chan error)
 
@@ -47,7 +81,7 @@ func main() {
 		shutdown <- proxy.ListenAndServe()
 	}()
 
-	err := <-shutdown
+	err = <-shutdown
 	log.Fatal(err)
 }
 
@@ -60,8 +94,8 @@ func HelloWorld(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "method: %s, id: %s", r.Method, reqVars["id"])
 }
 
-func newConnector(port int, handler http.Handler) *http.Server {
-	addr := ":" + strconv.Itoa(port)
+func newConnector(host string, port int, handler http.Handler) *http.Server {
+	addr := host + ":" + strconv.Itoa(port)
 	server := &http.Server{Addr: addr, Handler: handler}
 	return server
 }

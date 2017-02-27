@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,9 +19,9 @@ type ProxyHandlers struct {
 	ruleStorage *delay.RuleStorage
 }
 
-func NewProxyHandlers(host string, port int, storage *delay.RuleStorage) *ProxyHandlers {
+func NewProxyHandlers(hostPort string, storage *delay.RuleStorage) *ProxyHandlers {
 	return &ProxyHandlers{
-		target:      "http://" + host + ":" + strconv.Itoa(port),
+		target:      "http://" + hostPort,
 		client:      &http.Client{},
 		ruleStorage: storage}
 }
