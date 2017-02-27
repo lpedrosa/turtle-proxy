@@ -12,6 +12,8 @@ import (
 	"github.com/lpedrosa/turtle-proxy/delay"
 )
 
+var zeroDelay *delayConfig = new(delayConfig)
+
 type ProxyHandlers struct {
 	target      string
 	client      *http.Client
@@ -41,7 +43,7 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 
 	// delay it
 	delay := p.checkForDelay(method, path)
-	turtleIt(delay)
+	turtleIt(delay.request)
 
 	// reply original client
 	res, err := p.client.Do(req)
@@ -67,14 +69,19 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (p *ProxyHandlers) checkForDelay(method string, path string) int {
-	rule, ok := p.ruleStorage.Get(path)
+type delayConfig struct {
+	request  int
+	response int
+}
+
+func (p *ProxyHandlers) checkForDelay(method string, path string) *delayConfig {
+	rule, ok := p.ruleStorage.Get(method, path)
 	if !ok {
 		// no delay found
-		return 0
+		return zeroDelay
 	}
 
-	return rule.Delay
+	return &delayConfig{request: rule.RequestDelay, response: rule.ResponseDelay}
 }
 
 func turtleIt(delay int) {

@@ -27,10 +27,19 @@ func (a *ApiHandlers) CreateDelay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// store delay
-	a.ruleStorage.Store(*d.Target, d.Delay.Request)
+	rule := delay.Rule{
+		Method:        *d.Method,
+		Path:          *d.Target,
+		RequestDelay:  d.Delay.Request,
+		ResponseDelay: d.Delay.Response}
+
+	a.ruleStorage.Store(rule)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *ApiHandlers) ClearDelays(w http.ResponseWriter, r *http.Request) {
 }
 
 type apiError struct {
@@ -48,6 +57,10 @@ func writeError(w http.ResponseWriter, err error) {
 		return
 	}
 }
+
+//-------------------------------
+// Delay Parsing
+//-------------------------------
 
 type DelayConfig struct {
 	Request  int

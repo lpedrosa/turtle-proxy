@@ -22,7 +22,7 @@ func main() {
 	apiMux := mux.NewRouter()
 
 	apiMux.HandleFunc("/delay", apiHandlers.CreateDelay).Methods("POST")
-	apiMux.HandleFunc("/delay/{id}", HelloWorld).Methods("GET", "DELETE")
+	apiMux.HandleFunc("/delay", apiHandlers.ClearDelays).Methods("DELETE")
 
 	// for monitoring
 	apiMux.HandleFunc("/ping", handlePing).Methods("GET")
