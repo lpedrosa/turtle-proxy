@@ -23,12 +23,27 @@ type Config struct {
 	ProxyTarget string
 }
 
+func usage() {
+	fmt.Println("usage: turtle-proxy [options]\n")
+
+	fmt.Println("Options:")
+	fmt.Println("  --host      <0.0.0.0>  Hostname")
+	fmt.Println("  --port      <6000>     Proxy bind port")
+	fmt.Println("  --api-port  <6001>     API bind port")
+	fmt.Println("  --target               Proxy target address (host:port)\n")
+
+	fmt.Println("Example:")
+	fmt.Println("  To proxy requests to a server listening on 127.0.0.1:8080")
+	fmt.Println("  $ turtle-proxy --target 127.0.0.1:8080")
+}
+
 func parseConfig() (*Config, error) {
 	host := flag.String("host", "0.0.0.0", "hostname")
 	proxyPort := flag.Int("port", defaultPort, "proxy port")
 	apiPort := flag.Int("api-port", (*proxyPort)+1, "api port")
 	target := flag.String("target", "", "proxy target")
 
+	flag.Usage = usage
 	flag.Parse()
 
 	if target == nil || *target == "" {
@@ -46,6 +61,7 @@ func main() {
 	config, err := parseConfig()
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
+		usage()
 		os.Exit(1)
 	}
 
