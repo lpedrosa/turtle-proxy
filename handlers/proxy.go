@@ -31,7 +31,10 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	method := r.Method
 
-	log.Printf("Incoming %s request to: %s", method, path)
+	delay := p.checkForDelay(method, path)
+
+	msg := "Incoming %s request to: %s. Delaying it [pre: %dms, post: %dms]"
+	log.Printf(msg, method, path, delay.request, delay.response)
 
 	// create request
 	req, err := http.NewRequest(method, p.target+path, r.Body)
@@ -41,8 +44,7 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// delay it
-	delay := p.checkForDelay(method, path)
+	// delay the request
 	turtleIt(delay.request)
 
 	// reply original client
@@ -52,6 +54,9 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error while proxying: %s", err)
 		return
 	}
+
+	// delay the response
+	turtleIt(delay.response)
 
 	// copy all the headers
 	for k, v := range res.Header {
