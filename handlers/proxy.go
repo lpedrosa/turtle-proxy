@@ -33,7 +33,7 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 
 	delay := p.checkForDelay(method, path)
 
-	msg := "Incoming %s request to: %s. Delaying it [pre: %dms, post: %dms]"
+	msg := "proxy: incoming %s request to: %s. Delaying it [pre: %dms, post: %dms]"
 	log.Printf(msg, method, path, delay.request, delay.response)
 
 	// create request
@@ -69,7 +69,7 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	defer res.Body.Close()
 	_, err = io.Copy(w, res.Body)
 	if err != nil {
-		log.Printf("Error found while copying response body: %s", err)
+		log.Printf("proxy: error found while copying response body: %s", err)
 		return
 	}
 }

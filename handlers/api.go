@@ -34,12 +34,15 @@ func (a *ApiHandlers) CreateDelay(w http.ResponseWriter, r *http.Request) {
 		ResponseDelay: d.Delay.Response}
 
 	a.ruleStorage.Store(rule)
+	log.Printf("api: added rule: %#v", rule)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (a *ApiHandlers) ClearDelays(w http.ResponseWriter, r *http.Request) {
+	a.ruleStorage.Clear()
+	log.Println("api: cleared rules")
 }
 
 type apiError struct {
@@ -52,7 +55,7 @@ func writeError(w http.ResponseWriter, err error) {
 
 	encErr := json.NewEncoder(w).Encode(&apiError{Error: err.Error()})
 	if encErr != nil {
-		log.Printf("Error marshalling response: %s", encErr)
+		log.Printf("api: error marshalling response: %s", encErr)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -67,6 +67,11 @@ func (rs *RuleStorage) Store(rule Rule) {
 		panic("delays cannot be negative!")
 	}
 
+	if rule.RequestDelay == 0 && rule.ResponseDelay == 0 {
+		log.Printf("rule: discarding rule with no delay %#v", rule)
+		return
+	}
+
 	// only one caller can write at a time
 	rs.sLock.Lock()
 	defer rs.sLock.Unlock()
@@ -96,7 +101,7 @@ func (rs *RuleStorage) Get(method string, path string) (rule *Rule, ok bool) {
 	ruleWithMatch, ok := rs.storage[key]
 
 	if !ok {
-		log.Panicf("No rule found for match: %s\n", path)
+		log.Panicf("rule: No rule found for match: %s\n", path)
 	}
 
 	return ruleWithMatch.Rule, ok
