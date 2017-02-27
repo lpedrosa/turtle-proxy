@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -19,29 +20,28 @@ func NewApiHandlers(storage *delay.RuleStorage) *ApiHandlers {
 }
 
 func (a *ApiHandlers) CreateDelay(w http.ResponseWriter, r *http.Request) {
-	d, err := parseDelay(r)
+	d, err := ParseDelay(r.Body)
 	if err != nil {
-		log.Printf("Error parsing json: %s", err)
 		writeError(w, err)
 		return
 	}
 
 	// store delay
-	a.ruleStorage.Store(d.target, d.delay)
+	a.ruleStorage.Store(d.Target, d.Delay)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
 
 type apiError struct {
-	err string
+	Error string `json:"error"`
 }
 
 func writeError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
 
-	encErr := json.NewEncoder(w).Encode(&apiError{err: err.Error()})
+	encErr := json.NewEncoder(w).Encode(&apiError{Error: err.Error()})
 	if encErr != nil {
 		log.Printf("Error marshalling response: %s", encErr)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -49,14 +49,14 @@ func writeError(w http.ResponseWriter, err error) {
 	}
 }
 
-type delayRequest struct {
-	method string
-	target string
-	delay  int
+type DelayRequest struct {
+	Method string
+	Target string
+	Delay  int
 }
 
-func parseDelay(r *http.Request) (d *delayRequest, err error) {
-	jsonDecoder := json.NewDecoder(r.Body)
+func ParseDelay(r io.Reader) (d *DelayRequest, err error) {
+	jsonDecoder := json.NewDecoder(r)
 
 	// read body
 	err = jsonDecoder.Decode(&d)
@@ -64,16 +64,14 @@ func parseDelay(r *http.Request) (d *delayRequest, err error) {
 		return nil, err
 	}
 
-	log.Printf("Got: %#v", d)
-
-	// check if target is a valid url
-	_, err = url.ParseRequestURI(d.target)
+	// check if Target is a valid url
+	_, err = url.ParseRequestURI(d.Target)
 	if err != nil {
-		return nil, errors.New("target is not a valid url")
+		return nil, errors.New("target '" + d.Target + "' is not a valid url")
 	}
 
-	if d.delay <= 0 {
-		return nil, errors.New("delay should be > 0")
+	if d.Delay <= 0 {
+		return nil, errors.New("delay should be positive")
 	}
 
 	return d, nil
