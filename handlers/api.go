@@ -27,7 +27,7 @@ func (a *ApiHandlers) CreateDelay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// store delay
-	a.ruleStorage.Store(d.Target, d.Delay)
+	a.ruleStorage.Store(*d.Target, d.Delay.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -49,10 +49,48 @@ func writeError(w http.ResponseWriter, err error) {
 	}
 }
 
+type DelayConfig struct {
+	Request  int
+	Response int
+}
+
+func (dc *DelayConfig) validate() error {
+	if dc.Request < 0 {
+		return errors.New("request delay should be positive")
+	}
+	if dc.Response < 0 {
+		return errors.New("response delay should be positive")
+	}
+
+	return nil
+}
+
 type DelayRequest struct {
-	Method string
-	Target string
-	Delay  int
+	Method *string
+	Target *string
+	Delay  DelayConfig
+}
+
+func (dr *DelayRequest) validate() error {
+	if dr.Method == nil {
+		return errors.New("method is required")
+	}
+	if dr.Target == nil {
+		return errors.New("target is required")
+	}
+
+	// check if Target is a valid url
+	_, err := url.ParseRequestURI(*dr.Target)
+	if err != nil {
+		return errors.New("target " + *dr.Target + " is not a valid url")
+	}
+
+	err = dr.Delay.validate()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func ParseDelay(r io.Reader) (d *DelayRequest, err error) {
@@ -64,14 +102,9 @@ func ParseDelay(r io.Reader) (d *DelayRequest, err error) {
 		return nil, err
 	}
 
-	// check if Target is a valid url
-	_, err = url.ParseRequestURI(d.Target)
+	err = d.validate()
 	if err != nil {
-		return nil, errors.New("target '" + d.Target + "' is not a valid url")
-	}
-
-	if d.Delay <= 0 {
-		return nil, errors.New("delay should be positive")
+		return nil, err
 	}
 
 	return d, nil
