@@ -68,7 +68,13 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *ProxyHandlers) checkForDelay(method string, path string) int {
-	return 0
+	rule, ok := p.ruleStorage.Get(path)
+	if !ok {
+		// no delay found
+		return 0
+	}
+
+	return rule.Delay
 }
 
 func turtleIt(delay int) {
