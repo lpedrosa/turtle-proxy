@@ -52,7 +52,7 @@ func TestRuleStorage(t *testing.T) {
 		method := "GET"
 		path := "/route"
 
-		rule := Rule{Method: method, Path: path}
+		rule := Rule{Method: method, Path: path, RequestDelay: 1}
 
 		storage.Store(rule)
 		storage.Remove(method, path)
@@ -68,7 +68,7 @@ func TestRuleStorage(t *testing.T) {
 		method := "GET"
 		path := "/route"
 
-		rule := Rule{Method: method, Path: path}
+		rule := Rule{Method: method, Path: path, RequestDelay: 1}
 
 		storage.Store(rule)
 		storage.Clear()
@@ -84,11 +84,11 @@ func TestRuleStorage(t *testing.T) {
 		method := "GET"
 
 		path := "/route"
-		rule := Rule{Method: method, Path: path}
+		rule := Rule{Method: method, Path: path, RequestDelay: 1}
 		storage.Store(rule)
 
 		path2 := "/route/{id}"
-		rule2 := Rule{Method: method, Path: path2}
+		rule2 := Rule{Method: method, Path: path2, RequestDelay: 1}
 		storage.Store(rule2)
 
 		storage.Remove(method, path)
@@ -103,6 +103,21 @@ func TestRuleStorage(t *testing.T) {
 			t.Fatalf("Expected storage to contain rule with path: %s", path2)
 		}
 	})
+	t.Run("Rule with no delay are discarded", func(t *testing.T) {
+		storage := DefaultStorage()
+
+		method := "GET"
+		path := "/route"
+
+		rule := Rule{Method: method, Path: path}
+
+		storage.Store(rule)
+		_, ok := storage.Get(method, path)
+
+		if ok {
+			t.Fatalf("Expected storage to not contain rule with path: %s", path)
+		}
+	})
 }
 
 func TestRuleStorageComplexPaths(t *testing.T) {
@@ -110,7 +125,7 @@ func TestRuleStorageComplexPaths(t *testing.T) {
 		storage := DefaultStorage()
 
 		method := "GET"
-		path := "/route"
+		path := "/route/{everything:.*}"
 		delay := 10
 
 		r := Rule{Method: method, Path: path, RequestDelay: delay}
