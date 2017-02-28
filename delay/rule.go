@@ -22,7 +22,7 @@ type Rule struct {
 
 type RuleMatcher interface {
 	Add(method string, path string) string
-	Match(method string, path string) bool
+	Match(method string, path string) (string, bool)
 	Remove(id string)
 	Clear()
 }
@@ -30,11 +30,8 @@ type RuleMatcher interface {
 //-----------------------
 // Storage
 //-----------------------
-
-type storageKey string
-
-func newKey(method string, path string) storageKey {
-	return storageKey(method + ":" + path)
+func newKey(method string, path string) string {
+	return method + ":" + path
 }
 
 type ruleWithMatch struct {
@@ -43,7 +40,7 @@ type ruleWithMatch struct {
 }
 
 type RuleStorage struct {
-	storage map[storageKey]*ruleWithMatch
+	storage map[string]*ruleWithMatch
 	matcher RuleMatcher
 	sLock   sync.RWMutex
 }
@@ -56,7 +53,7 @@ func DefaultStorage() *RuleStorage {
 
 func NewStorage(matcher RuleMatcher) *RuleStorage {
 	rs := &RuleStorage{}
-	rs.storage = make(map[storageKey]*ruleWithMatch)
+	rs.storage = make(map[string]*ruleWithMatch)
 	rs.matcher = matcher
 	return rs
 }
@@ -92,12 +89,13 @@ func (rs *RuleStorage) Get(method string, path string) (rule *Rule, ok bool) {
 	rs.sLock.RLock()
 	defer rs.sLock.RUnlock()
 
-	ok = rs.matcher.Match(method, path)
+	pathTemplate, ok := rs.matcher.Match(method, path)
 	if !ok {
 		return nil, ok
 	}
 
-	key := newKey(method, path)
+	key := newKey(method, pathTemplate)
+
 	ruleWithMatch, ok := rs.storage[key]
 
 	if !ok {
@@ -118,6 +116,8 @@ func (rs *RuleStorage) Remove(method string, path string) {
 		return
 	}
 
+	log.Printf("rule: removing rule with key: %s\n", key)
+
 	matchId := ruleWithMatch.matchId
 	rs.matcher.Remove(matchId)
 
@@ -129,7 +129,7 @@ func (rs *RuleStorage) Clear() {
 	defer rs.sLock.Unlock()
 
 	// clear storage
-	rs.storage = make(map[storageKey]*ruleWithMatch)
+	rs.storage = make(map[string]*ruleWithMatch)
 
 	// clear matcher
 	rs.matcher.Clear()

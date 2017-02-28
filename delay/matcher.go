@@ -37,18 +37,24 @@ func (g *gorillaMatcher) Add(method string, path string) string {
 	return matchId
 }
 
-func (g *gorillaMatcher) Match(method string, path string) bool {
+func (g *gorillaMatcher) Match(method string, path string) (string, bool) {
 	req, err := http.NewRequest(method, path, nil)
 	if err != nil {
-		// TODO use a proper logger
-		log.Printf("Error matching path: %s\n", err)
-		return false
+		log.Panicf("matcher: error matching path: %s\n", err)
 	}
 
 	var routeMatch mux.RouteMatch
 	ok := g.router.Match(req, &routeMatch)
+	if !ok {
+		return "", false
+	}
 
-	return ok
+	pathTemplate, err := routeMatch.Route.GetPathTemplate()
+	if err != nil {
+		log.Panic("matcher: matched a route with no template!")
+	}
+
+	return pathTemplate, ok
 }
 
 func (g *gorillaMatcher) Remove(id string) {

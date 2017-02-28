@@ -3,6 +3,9 @@
 build:
 	go build -o turtle-proxy
 
+test:
+	go test ./...
+
 release:
 	GOOS=linux GOARCH=amd64 go build -o turtle-proxy-linux-x64
 	GOOS=darwin GOARCH=amd64 go build -o turtle-proxy-darwin-x64
