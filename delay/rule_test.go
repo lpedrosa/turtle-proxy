@@ -104,3 +104,40 @@ func TestRuleStorage(t *testing.T) {
 		}
 	})
 }
+
+func TestRuleStorageComplexPaths(t *testing.T) {
+	t.Run("Get works for sub-path", func(t *testing.T) {
+		storage := DefaultStorage()
+
+		method := "GET"
+		path := "/route"
+		delay := 10
+
+		r := Rule{Method: method, Path: path, RequestDelay: delay}
+
+		storage.Store(r)
+
+		subPath := "/route/109823/something"
+		rule, ok := storage.Get(method, subPath)
+
+		if !ok {
+			t.Fatalf("Expected storage to contain rule with path: %s", path)
+		}
+
+		if rule.Method != method {
+			t.Fatalf("Expected rule method to be: %s. Got: %s", method, rule.Method)
+		}
+
+		if rule.Path != path {
+			t.Fatalf("Expected rule path to be: %s. Got: %s", path, rule.Path)
+		}
+
+		if rule.RequestDelay != delay {
+			t.Fatalf("Expected rule request delay to be: %d. Got: %d", delay, rule.RequestDelay)
+		}
+
+		if rule.ResponseDelay != 0 {
+			t.Fatalf("Expected rule request delay to be: %d. Got: %d", delay, rule.ResponseDelay)
+		}
+	})
+}
