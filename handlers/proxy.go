@@ -38,10 +38,15 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	// create request
 	req, err := http.NewRequest(method, p.target+path, r.Body)
 	if err != nil {
+		errorMsg := fmt.Sprintf("error while proxying: %s", err)
+		log.Printf("proxy: %s\n", errorMsg)
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while proxying: %s", err)
+		fmt.Fprint(w, errorMsg)
 		return
 	}
+
+	// copy all request headers
+	req.Header = r.Header
 
 	// delay the request
 	turtleIt(delay.request)
@@ -49,15 +54,17 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	// reply original client
 	res, err := p.client.Do(req)
 	if err != nil {
+		errorMsg := fmt.Sprintf("error while proxying: %s", err)
+		log.Printf("proxy: %s\n", errorMsg)
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error while proxying: %s", err)
+		fmt.Fprint(w, errorMsg)
 		return
 	}
 
 	// delay the response
 	turtleIt(delay.response)
 
-	// copy all the headers
+	// copy all the response headers
 	for k, v := range res.Header {
 		w.Header().Set(k, strings.Join(v, ","))
 	}
@@ -68,7 +75,7 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 	defer res.Body.Close()
 	_, err = io.Copy(w, res.Body)
 	if err != nil {
-		log.Printf("proxy: error found while copying response body: %s", err)
+		log.Printf("proxy: error while copying response body: %s", err)
 		return
 	}
 }
