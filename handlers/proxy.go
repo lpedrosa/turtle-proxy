@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -32,11 +33,13 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 
 	delay := p.checkForDelay(method, path)
 
+	targetPath := p.buildTargetPath(r.URL)
+
 	msg := "proxy: incoming %s request to: %s. Delaying it [pre: %dms, post: %dms]"
-	log.Printf(msg, method, path, delay.request, delay.response)
+	log.Printf(msg, method, targetPath, delay.request, delay.response)
 
 	// create request
-	req, err := http.NewRequest(method, p.target+path, r.Body)
+	req, err := http.NewRequest(method, targetPath, r.Body)
 	if err != nil {
 		errorMsg := fmt.Sprintf("error while proxying: %s", err)
 		log.Printf("proxy: %s\n", errorMsg)
@@ -78,6 +81,17 @@ func (p *ProxyHandlers) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		log.Printf("proxy: error while copying response body: %s", err)
 		return
 	}
+}
+
+func (p *ProxyHandlers) buildTargetPath(url *url.URL) string {
+	targetPath := p.target + url.Path
+	query := url.RawQuery
+
+	if query == "" {
+		return targetPath
+	}
+
+	return targetPath + "?" + query
 }
 
 type delayConfig struct {
