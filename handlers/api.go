@@ -43,9 +43,15 @@ func (a *ApiHandlers) CreateDelay(w http.ResponseWriter, r *http.Request) {
 func (a *ApiHandlers) ClearDelays(w http.ResponseWriter, r *http.Request) {
 	a.ruleStorage.Clear()
 	log.Println("api: cleared rules")
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
-type apiError struct {
+//-------------------------------
+// Error handling
+//-------------------------------
+
+type ApiError struct {
 	Error string `json:"error"`
 }
 
@@ -53,7 +59,7 @@ func writeError(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
 
-	encErr := json.NewEncoder(w).Encode(&apiError{Error: err.Error()})
+	encErr := json.NewEncoder(w).Encode(&ApiError{Error: err.Error()})
 	if encErr != nil {
 		log.Printf("api: error marshalling response: %s", encErr)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -66,8 +72,8 @@ func writeError(w http.ResponseWriter, err error) {
 //-------------------------------
 
 type DelayConfig struct {
-	Request  int
-	Response int
+	Request  int `json:request`
+	Response int `json:response`
 }
 
 func (dc *DelayConfig) validate() error {
@@ -82,9 +88,9 @@ func (dc *DelayConfig) validate() error {
 }
 
 type DelayRequest struct {
-	Method *string
-	Target *string
-	Delay  DelayConfig
+	Method *string     `json:method`
+	Target *string     `json:target`
+	Delay  DelayConfig `json:delay`
 }
 
 func (dr *DelayRequest) validate() error {
